@@ -32,6 +32,15 @@
 - [x] 制定 Phase 3 计划：文章生成 + 深度互动
 
 ### 待执行
-- [ ] Phase 3.1: 路由 + 页面骨架
-- [ ] Phase 3.2: Mock 数据驱动完整 UI
+- [x] Phase 3.1: 路由 + 页面骨架
+- [x] Phase 3.2: Mock 数据驱动完整 UI
 - [ ] Phase 3.3: 对接真实 API
+
+## Session 5 — 2026-03-11
+
+### 完成
+- [x] 新建 frontend/src/store/articleForm.js — 表单数据传递 store
+- [x] 新建 frontend/src/views/ArticleGenerateView.vue — 文章生成+互动页面（含 Mock 数据）
+- [x] 更新 frontend/src/router/index.js — 添加 /science-article/generate/:taskId 路由
+- [x] 更新 frontend/src/views/ScienceArticle.vue — 表单提交后跳转到生成页面
+- [x] 构建验证通过

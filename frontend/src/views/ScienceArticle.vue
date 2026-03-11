@@ -163,6 +163,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { setArticleForm } from '../store/articleForm'
 
 const router = useRouter()
 const fileInput = ref(null)
@@ -217,7 +218,9 @@ const handleDrop = (e) => {
 
 const handleSubmit = () => {
   if (!canSubmit.value) return
-  alert('功能开发中，敬请期待！')
+  setArticleForm(form.value)
+  const taskId = Date.now().toString()
+  router.push({ name: 'ArticleGenerate', params: { taskId } })
 }
 </script>
 

@@ -7,6 +7,7 @@ import ReportView from '../views/ReportView.vue'
 import InteractionView from '../views/InteractionView.vue'
 import ScienceArticle from '../views/ScienceArticle.vue'
 import CaseReport from '../views/CaseReport.vue'
+import ArticleGenerateView from '../views/ArticleGenerateView.vue'
 
 const routes = [
   {
@@ -23,6 +24,12 @@ const routes = [
     path: '/case-report',
     name: 'CaseReport',
     component: CaseReport
+  },
+  {
+    path: '/science-article/generate/:taskId',
+    name: 'ArticleGenerate',
+    component: ArticleGenerateView,
+    props: true
   },
   {
     path: '/process/:projectId',
