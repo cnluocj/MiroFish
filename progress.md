@@ -44,3 +44,12 @@
 - [x] 更新 frontend/src/router/index.js — 添加 /science-article/generate/:taskId 路由
 - [x] 更新 frontend/src/views/ScienceArticle.vue — 表单提交后跳转到生成页面
 - [x] 构建验证通过
+
+## Session 6 — 2026-03-11
+
+### 完成
+- [x] 4.1 CaseReport.vue — 开发中提示页面（进度条 + 脉冲动画 + 工作流步骤）
+- [x] 4.2 ScienceArticle.vue — 目标读者改为单选（普通大众/患者及家属/医护同行）
+- [x] 4.3 ScienceArticle.vue — 科室选择后自动填充科普主题（12个科室映射）
+- [x] 4.4 ScienceArticle.vue — 双栏布局改造（左侧工作流6步骤 + 右侧表单）
+- [x] 构建验证通过

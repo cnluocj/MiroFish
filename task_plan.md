@@ -100,6 +100,25 @@ ArticleGenerateView.vue (文章生成 — 改造自 ReportView 模式)
 
 ---
 
+## Phase 4: UI 优化与体验改进 ← CURRENT
+
+### 4.1 病例报告页面优化
+- [ ] CaseReport.vue — 改为更精致的"正在开发中，敬请期待"样式
+
+### 4.2 目标读者改为单选
+- [ ] ScienceArticle.vue — 将 input 改为 radio 单选（普通大众、患者及家属、医护同行）
+
+### 4.3 科室选择后自动填充科普主题
+- [ ] ScienceArticle.vue — 添加科室→默认主题映射，选择科室后自动填入 topic
+
+### 4.4 表单页面双栏改造
+- [ ] ScienceArticle.vue — 改为左右双栏布局
+  - 左栏：参考原始首页左面板样式（状态指示 + 工作流步骤列表）
+  - 右栏：现有表单（console-box）
+  - 虚拟步骤：文献检索 → 知识图谱 → 素材整理 → 大纲规划 → 内容创作 → 审核优化
+
+---
+
 ## 关键文件
 
 | 文件 | 状态 | 用途 |
