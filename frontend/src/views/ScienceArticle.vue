@@ -228,8 +228,8 @@
 
           <!-- 提交按钮 -->
           <div class="console-section btn-section">
-            <button class="start-btn" :disabled="!canSubmit" @click="handleSubmit">
-              <span>开始生成</span>
+            <button class="start-btn" :disabled="!canSubmit || isSubmitting" @click="handleSubmit">
+              <span>{{ isSubmitting ? '启动中...' : '开始生成' }}</span>
               <span class="btn-arrow">→</span>
             </button>
           </div>
@@ -242,12 +242,14 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { generateArticle } from '../api/article'
 import { setArticleForm } from '../store/articleForm'
 
 const router = useRouter()
 const fileInput = ref(null)
 const isDragOver = ref(false)
 const currentWorkflowStep = ref(0)
+const isSubmitting = ref(false)
 
 const audiences = [
   { value: 'general', label: '普通大众' },
@@ -321,11 +323,33 @@ const handleDrop = (e) => {
   addFiles(e.dataTransfer.files)
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!canSubmit.value) return
-  setArticleForm(form.value)
-  const taskId = Date.now().toString()
-  router.push({ name: 'ArticleGenerate', params: { taskId } })
+  if (isSubmitting.value) return
+
+  const payload = {
+    ...form.value,
+    department: form.value.department === '其他' ? form.value.departmentCustom.trim() : form.value.department,
+    referenceMaterials: form.value.files.map(file => file.name)
+  }
+
+  try {
+    isSubmitting.value = true
+    setArticleForm(payload)
+    const response = await generateArticle(payload)
+    const articleId = response?.data?.article_id
+
+    if (!articleId) {
+      throw new Error('后端未返回 article_id')
+    }
+
+    router.push({ name: 'ArticleGenerate', params: { taskId: articleId } })
+  } catch (error) {
+    console.error('启动文章生成失败:', error)
+    window.alert(error?.message || '启动文章生成失败，请检查后端服务或 LLM 配置')
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 

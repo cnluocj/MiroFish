@@ -44,7 +44,7 @@
               <div class="waiting-ring"></div>
               <div class="waiting-ring"></div>
             </div>
-            <span class="waiting-text">Waiting for Article Agent...</span>
+            <span class="waiting-text">{{ waitingText }}</span>
           </div>
 
           <!-- Article Content -->
@@ -287,11 +287,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { chatWithArticle, getArticle, getArticleAgentLog } from '../api/article'
 import { getArticleForm } from '../store/articleForm'
 
+const route = useRoute()
 const router = useRouter()
 const formData = ref(getArticleForm())
+const articleId = computed(() => route.params.taskId)
 
 // Layout
 const viewMode = ref('split')
@@ -306,6 +309,8 @@ const collapsedSections = ref(new Set())
 const timeline = ref([])
 const startTime = ref(null)
 const elapsedSeconds = ref(0)
+const waitingText = ref('等待 Article Agent 开始工作...')
+const generationError = ref('')
 
 // Chat state
 const chatHistory = ref([])
@@ -316,19 +321,21 @@ const timelineContainer = ref(null)
 const leftPanel = ref(null)
 
 // Timers
-let timers = []
+let pollTimer = null
 let elapsedTimer = null
+let agentLogLine = 0
 
 // --- Computed ---
 const totalSections = computed(() => outline.value?.sections?.length || 0)
 const completedSections = computed(() => Object.keys(generatedSections.value).length)
-const progressPercent = computed(() => {
-  if (!totalSections.value) return 0
-  return Math.round((completedSections.value / totalSections.value) * 100)
+
+const statusClass = computed(() => {
+  if (generationError.value) return 'error'
+  return isComplete.value ? 'completed' : 'processing'
 })
 
-const statusClass = computed(() => isComplete.value ? 'completed' : 'processing')
 const statusText = computed(() => {
+  if (generationError.value) return 'FAILED'
   if (isComplete.value) return 'COMPLETED'
   if (outline.value) return 'GENERATING'
   return 'PLANNING'
@@ -381,13 +388,13 @@ const toggleSection = (idx) => {
   collapsedSections.value = s
 }
 
-const getTimeStr = () => {
-  const now = new Date()
-  return now.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+const formatTime = (value) => {
+  const date = value ? new Date(value) : new Date()
+  return date.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-const addTimeline = (type, label, detail = '') => {
-  timeline.value.push({ type, label, detail, time: getTimeStr() })
+const addTimeline = (type, label, detail = '', time = formatTime()) => {
+  timeline.value.push({ type, label, detail, time })
   nextTick(() => {
     if (timelineContainer.value) {
       timelineContainer.value.scrollTop = timelineContainer.value.scrollHeight
@@ -395,112 +402,174 @@ const addTimeline = (type, label, detail = '') => {
   })
 }
 
-// --- Mock Generation ---
-const buildMockOutline = () => {
-  const topic = formData.value?.topic || '医学科普'
-  const audience = formData.value?.audience || '普通读者'
-  const toneLabel = formData.value?.tone === 'professional' ? '专业严谨，术语规范' : '通俗易懂，贴近生活'
+const startElapsedTimer = (createdAt) => {
+  if (elapsedTimer) clearInterval(elapsedTimer)
+  startTime.value = createdAt ? new Date(createdAt).getTime() : Date.now()
+  elapsedSeconds.value = Math.max(0, Math.floor((Date.now() - startTime.value) / 1000))
+  elapsedTimer = setInterval(() => {
+    elapsedSeconds.value = Math.max(0, Math.floor((Date.now() - startTime.value) / 1000))
+  }, 1000)
+}
 
-  return {
-    title: topic,
-    summary: `本文围绕"${topic}"这一主题，面向${audience}，从基础概念、核心知识、实践建议和常见误区四个维度展开科普。内容力求${toneLabel}，帮助读者建立科学的健康认知。`,
-    sections: [
-      { title: '引言与背景', description: '简介主题的重要性和现状' },
-      { title: '核心知识解析', description: '深入讲解关键医学知识' },
-      { title: '实践与建议', description: '给出具体的生活指导' },
-      { title: '常见误区与注意事项', description: '澄清认知偏差' },
-      { title: '总结与展望', description: '全文总结与进一步建议' }
-    ]
+const stopElapsedTimer = () => {
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+    elapsedTimer = null
   }
 }
 
-const buildMockContents = () => {
-  const topic = formData.value?.topic || '该疾病'
-  const dept = formData.value?.department || '相关科室'
-
-  return [
-    `近年来，随着人们健康意识的提高，关于"${topic}"的讨论越来越受到关注。据${dept}临床数据显示，相关健康问题的发病率呈逐年上升趋势，已成为不容忽视的公共卫生议题。\n\n本文将从专业角度出发，为您系统梳理这一领域的核心知识，帮助您建立科学、正确的健康认知。\n\n> 健康科普的目标不是制造焦虑，而是帮助每个人成为自己健康的第一责任人。`,
-
-    `### 基本概念\n\n要理解${topic}，首先需要了解其基本的医学原理。从${dept}的角度来看，这涉及到人体多个系统的协调运作。\n\n### 发病机制\n\n目前医学研究表明，相关疾病的发生往往与以下因素有关：\n\n- **遗传因素**：家族史是重要的风险评估指标\n- **环境因素**：生活方式、饮食习惯、职业暴露等\n- **年龄因素**：不同年龄段的发病特点有所差异\n\n### 诊断标准\n\n临床上通常依据以下指标进行综合评估，建议定期进行相关检查。`,
-
-    `### 生活方式调整\n\n科学的生活方式是预防和管理的基础：\n\n1. **合理膳食**：注重营养均衡，控制总热量摄入\n2. **适度运动**：建议每周进行 150 分钟以上的中等强度有氧运动\n3. **规律作息**：保证充足睡眠，避免熬夜\n4. **情绪管理**：保持积极心态，学会压力调节\n\n### 就医指导\n\n出现以下情况时，建议及时到${dept}就诊：\n\n- 症状持续加重或反复发作\n- 常规措施无法有效控制\n- 出现新的异常症状`,
-
-    `### 误区一：没有症状就不需要关注\n\n许多疾病在早期可能没有明显症状，但这并不意味着可以忽视。定期体检和筛查对于早期发现、早期干预至关重要。\n\n### 误区二：偏方和保健品可以替代正规治疗\n\n目前没有科学证据表明偏方或保健品能够替代经过临床验证的正规治疗方案。生病后应及时就医，遵医嘱用药。\n\n### 误区三：治疗效果好了就可以自行停药\n\n擅自停药或减量可能导致病情反复甚至加重。用药调整应在医生指导下进行。\n\n> **提醒**：任何治疗方案的调整都应咨询专业医生，切勿自行决定。`,
-
-    `${topic}是一个需要长期关注和科学管理的健康议题。通过本文的介绍，希望读者能够：\n\n1. 建立对该领域的基本认知\n2. 掌握科学的预防和管理方法\n3. 避免常见的认知误区\n4. 在需要时及时寻求专业医疗帮助\n\n健康管理是一场马拉松，需要耐心和坚持。祝您身体健康！\n\n---\n\n*本文仅供科普参考，具体诊疗方案请咨询${dept}专业医生。*`
-  ]
+const stopPolling = () => {
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
 }
 
-const startMockGeneration = () => {
-  startTime.value = Date.now()
-  elapsedTimer = setInterval(() => {
-    elapsedSeconds.value = Math.floor((Date.now() - startTime.value) / 1000)
-  }, 1000)
+const processLogEntry = (entry) => {
+  const time = formatTime(entry.timestamp)
+  const details = entry.details || {}
 
-  timers.push(setTimeout(() => {
-    addTimeline('info', '初始化生成引擎')
-    addTimeline('info', `读取表单参数`, `主题: "${formData.value?.topic || '未设置'}"`)
-  }, 300))
+  if (typeof entry.elapsed_seconds === 'number') {
+    elapsedSeconds.value = Math.max(elapsedSeconds.value, Math.floor(entry.elapsed_seconds))
+  }
 
-  timers.push(setTimeout(() => {
-    addTimeline('active', '开始规划文章大纲...')
-  }, 800))
-
-  timers.push(setTimeout(() => {
-    outline.value = buildMockOutline()
-    addTimeline('success', '大纲规划完成', `共 ${outline.value.sections.length} 个章节`)
-    generateNextSection(0)
-  }, 2500))
-}
-
-const generateNextSection = (index) => {
-  const sections = outline.value.sections
-  const contents = buildMockContents()
-
-  if (index >= sections.length) {
-    timers.push(setTimeout(() => {
+  switch (entry.action) {
+    case 'article_start':
+      waitingText.value = 'Article Agent 已启动，正在准备上下文...'
+      addTimeline('info', '初始化生成引擎', details.message || '', time)
+      break
+    case 'planning_start':
+      waitingText.value = '正在规划文章大纲...'
+      addTimeline('active', '开始规划文章大纲...', details.message || '', time)
+      break
+    case 'planning_complete':
+      outline.value = details.outline || outline.value
+      waitingText.value = '大纲已生成，开始逐段创作...'
+      addTimeline('success', '大纲规划完成', `共 ${outline.value?.sections?.length || 0} 个章节`, time)
+      break
+    case 'section_start':
+      currentSectionIndex.value = entry.section_index
+      addTimeline('active', `正在生成: ${entry.section_title || details.message || '章节内容'}`, '', time)
+      break
+    case 'section_complete':
+      if (entry.section_index !== null && entry.section_index !== undefined) {
+        generatedSections.value[entry.section_index] = details.content || ''
+      }
+      addTimeline('success', `完成: ${entry.section_title || `章节 ${entry.section_index}`}`, '', time)
+      break
+    case 'report_complete':
       isComplete.value = true
       currentSectionIndex.value = null
-      clearInterval(elapsedTimer)
-      addTimeline('success', '文章生成完成', '所有章节已生成，可进入深度互动')
-    }, 500))
+      waitingText.value = '文章生成完成'
+      addTimeline('success', '文章生成完成', '所有章节已生成，可进入深度互动', time)
+      stopElapsedTimer()
+      stopPolling()
+      break
+    case 'error':
+      generationError.value = details.error || details.message || '文章生成失败'
+      waitingText.value = generationError.value
+      addTimeline('error', '生成失败', generationError.value, time)
+      stopElapsedTimer()
+      stopPolling()
+      break
+    default:
+      break
+  }
+}
+
+const pollAgentLogs = async () => {
+  if (!articleId.value || generationError.value) return
+
+  try {
+    const response = await getArticleAgentLog(articleId.value, agentLogLine)
+    const logs = response?.data?.logs || []
+    const totalLines = response?.data?.total_lines || agentLogLine
+
+    logs.forEach(processLogEntry)
+    agentLogLine = totalLines
+  } catch (error) {
+    console.error('轮询文章日志失败:', error)
+  }
+}
+
+const bootstrapArticle = async () => {
+  if (!articleId.value) {
+    router.push('/science-article')
     return
   }
 
-  currentSectionIndex.value = index
-  addTimeline('active', `正在生成: ${sections[index].title}`)
+  try {
+    const response = await getArticle(articleId.value)
+    const article = response?.data
 
-  timers.push(setTimeout(() => {
-    generatedSections.value[index] = contents[index] || '内容生成中...'
-    addTimeline('success', `完成: ${sections[index].title}`)
-    generateNextSection(index + 1)
-  }, 1500 + Math.random() * 1500))
+    if (!article) {
+      throw new Error('未获取到文章数据')
+    }
+
+    formData.value = formData.value || article.form_data
+    if (article.outline) {
+      outline.value = article.outline
+    }
+    if (article.generated_sections) {
+      Object.entries(article.generated_sections).forEach(([key, value]) => {
+        generatedSections.value[Number(key)] = value.content
+      })
+    }
+    if (article.status === 'completed') {
+      isComplete.value = true
+    }
+    if (article.status === 'failed') {
+      generationError.value = article.error || '文章生成失败'
+      waitingText.value = generationError.value
+    }
+
+    startElapsedTimer(article.created_at)
+    await pollAgentLogs()
+
+    if (!isComplete.value && !generationError.value) {
+      pollTimer = setInterval(pollAgentLogs, 1800)
+    } else {
+      stopElapsedTimer()
+    }
+  } catch (error) {
+    console.error('加载文章任务失败:', error)
+    generationError.value = error?.message || '加载文章任务失败'
+    waitingText.value = generationError.value
+  }
 }
 
 // --- Chat ---
-const sendMessage = () => {
+const sendMessage = async () => {
   const text = chatInput.value.trim()
   if (!text || isSending.value) return
 
-  chatHistory.value.push({ role: 'user', content: text, time: getTimeStr() })
+  const userMessage = { role: 'user', content: text, time: formatTime() }
+  chatHistory.value.push(userMessage)
   chatInput.value = ''
   isSending.value = true
   scrollChatToBottom()
 
-  const dept = formData.value?.department || '临床'
-  const topic = formData.value?.topic || '这个领域'
-  const mockResponses = [
-    `关于您的问题，结合文章内容来看，这是一个很好的切入点。"${topic}"确实有很多值得深入探讨的方面。\n\n从${dept}角度来说，建议关注以下几点：\n\n1. 个体化差异是需要重点考虑的因素\n2. 最新的循证医学证据不断在更新\n3. 与主治医生的充分沟通非常重要\n\n您还想了解哪方面的具体内容？`,
-    `感谢您的提问！这个问题在${dept}中确实很常见。\n\n根据目前的研究和指南推荐，核心建议是：\n\n- **规范化管理**是基础\n- **定期随访**不可忽视\n- **患者教育**对预后有积极影响\n\n如果需要，我可以针对文章中的某个具体章节做更详细的展开说明。`,
-    `这是一个非常专业的问题。让我结合文章内容为您分析：\n\n文章中提到的核心知识点为我们提供了一个基本框架。在此基础上，我想补充以下几点：\n\n> 循证医学强调的是"最佳证据、临床经验和患者偏好"的有机结合。\n\n实际应用中需要根据具体情况灵活调整。建议您将这些信息作为与医生沟通的参考，而非直接的诊疗依据。`
-  ]
-
-  timers.push(setTimeout(() => {
-    const idx = chatHistory.value.filter(m => m.role === 'assistant').length % mockResponses.length
-    chatHistory.value.push({ role: 'assistant', content: mockResponses[idx], time: getTimeStr() })
+  try {
+    const response = await chatWithArticle({
+      article_id: articleId.value,
+      message: text,
+      chat_history: chatHistory.value.slice(0, -1).map(({ role, content }) => ({ role, content }))
+    })
+    chatHistory.value.push({
+      role: 'assistant',
+      content: response?.data?.response || '暂时没有生成回复，请稍后重试。',
+      time: formatTime()
+    })
+  } catch (error) {
+    chatHistory.value.push({
+      role: 'assistant',
+      content: `当前对话请求失败：${error?.message || '未知错误'}`,
+      time: formatTime()
+    })
+  } finally {
     isSending.value = false
     scrollChatToBottom()
-  }, 1000 + Math.random() * 1000))
+  }
 }
 
 const scrollChatToBottom = () => {
@@ -540,16 +609,16 @@ const renderMarkdown = (text) => {
 
 // --- Lifecycle ---
 onMounted(() => {
-  if (!formData.value) {
+  if (!formData.value && !articleId.value) {
     router.push('/science-article')
     return
   }
-  startMockGeneration()
+  bootstrapArticle()
 })
 
 onUnmounted(() => {
-  timers.forEach(clearTimeout)
-  if (elapsedTimer) clearInterval(elapsedTimer)
+  stopPolling()
+  stopElapsedTimer()
 })
 </script>
 
@@ -637,6 +706,7 @@ onUnmounted(() => {
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #D1D5DB; }
 .status-indicator.processing .dot { background: #F59E0B; animation: pulse 1s infinite; }
 .status-indicator.completed .dot { background: #10B981; }
+.status-indicator.error .dot { background: #EF4444; }
 
 @keyframes pulse { 50% { opacity: 0.5; } }
 

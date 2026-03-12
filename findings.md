@@ -124,9 +124,48 @@ pathname === item.href ||
 - `MainView.vue`、`SimulationView.vue`、`ReportView.vue`、`ArticleGenerateView.vue` 当前都是 `height: 100vh` 的双层布局，接入全局 Header 后需要改成 `calc(100vh - var(--site-header-offset))`
 - 主站 Header 的移动端关闭按钮可以直接用内联 SVG，不需要额外引入 `close.png`
 
+### Phase 6 调研：导航链路问题 (2026-03-12)
+
+**问题**: 主站和 AI 站的 "AI写作" tab 链接指向 `https://ai.medstarai.com/medical-science`，但 AI 站 Vue Router 中没有 `/medical-science` 路由。同时 Caddy 主站有一条多余的 `medstarai.com/medical-science*` → `ai.medstarai.com{uri}` 重定向。
+
+**结论**:
+- AI写作链接统一改为 `https://ai.medstarai.com`（指向 AI 站首页 `/`）
+- 删除 Caddy 多余重定向
+- 涉及 3 处改动: AI站 SiteHeader.vue、主站 Header.tsx、Caddy 配置
+
+**主站 active 检测兼容性**: AI写作 href 改为绝对 URL 后，在主站上 `pathname` 匹配不上外部 URL，AI写作 tab 自然不高亮——这是正确行为。
+
 ### Phase 5 已实现项 (2026-03-12)
 - 新增 `SiteHeader.vue`，按 Vue 3 重写主站 Header，并将站内链接统一改成 `https://medstarai.com/*`
 - 在当前 AI 写作站内，导航高亮固定落在“AI写作”
 - 通过 `App.vue` 注入全局顶部占位变量，避免固定 Header 压住页面内容
 - 入口型页面改成依赖全局 Header；工作流页面继续保留本地功能性 header 作为第二层头部
 - 构建验证通过，未发现编译级错误
+
+## Phase 3.3 调研补充：真实文章生成链路 (2026-03-12)
+
+### 后端可直接复用
+- `backend/app/utils/llm_client.py` 已封装 OpenAI 兼容调用，支持普通文本和 JSON 输出
+- `backend/app/models/task.py` 已有线程安全的任务管理器，适合长任务进度跟踪
+- `backend/app/services/report_agent.py` 的 `ReportLogger` / JSONL 日志格式可直接借鉴
+
+### 后端不适合直接复用
+- `ReportAgent` 强依赖 simulation / graph / Zep / tool call 循环，不适合医学科普文章
+- 直接改 `report` 端点会把医学文章和模拟报告耦合在一起，后续维护成本高
+
+### 前端现状
+- `ArticleGenerateView.vue` 当前完全依赖 mock：`startMockGeneration()`、`buildMockOutline()`、`buildMockContents()`、mock `sendMessage()`
+- `ScienceArticle.vue` 当前提交仅保存本地 store 并跳转，没有真实后端启动动作
+- 前端还没有 `article` API 模块，目前只有 `report.js`
+
+### 实现结论
+- 最短路径是新增独立 `/api/article/*`，复用基础设施但不侵入现有 `/api/report/*`
+- 前端只需要保留现有 UI 状态机，把 mock 计时器替换成“启动任务 + 轮询日志 + 真实聊天”
+
+### Phase 3.3 已实现项 (2026-03-12)
+- 新增后端 `article` 蓝图和 4 个核心接口：`POST /api/article/generate`、`GET /api/article/<id>`、`GET /api/article/<id>/agent-log`、`POST /api/article/chat`
+- 新增 `ArticleAgent`，实现了大纲规划、逐章节生成、全文组装、对话问答
+- 文章生成结果持久化到 `backend/uploads/articles/<article_id>/`，包含 `meta.json`、`progress.json`、`agent_log.jsonl`
+- `ScienceArticle.vue` 已从“本地跳转”改成“先启动后端任务，再带 article_id 进入生成页”
+- `ArticleGenerateView.vue` 已从 mock 定时器改成真实日志轮询，并支持刷新后按 `article_id` 恢复状态
+- 当前端到端真实效果仍依赖本地 `.env` 中 `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL_NAME` 正确配置

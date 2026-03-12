@@ -130,7 +130,7 @@ const navItems = computed(() => [
       { href: `${siteBaseUrl}/business/health`, label: '健康科普' }
     ]
   },
-  { href: 'https://ai.medstarai.com/medical-science', label: 'AI写作', key: 'ai-writing' },
+  { href: 'https://ai.medstarai.com', label: 'AI写作', key: 'ai-writing' },
   { href: `${siteBaseUrl}/training`, label: '培训课程' },
   { href: `${siteBaseUrl}/news`, label: '新闻通知' },
   { href: `${siteBaseUrl}/about`, label: '关于我们' }

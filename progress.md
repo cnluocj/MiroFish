@@ -79,3 +79,42 @@
 
 ### 待执行
 - [ ] 用户本地启动后进行人工视觉验收
+
+## Session 9 — 2026-03-12
+
+### 完成
+- [x] 分析 Caddy 配置和导航链路问题
+- [x] 确定方案 A（保持子域名），AI写作链接改为 `https://ai.medstarai.com`
+- [x] 制定 Phase 6 计划（含主站 + AI站 + Caddy 三处改动）
+- [x] Phase 6 代码改动完成（SiteHeader.vue + Header.tsx），Caddy 由用户手动修改
+- [x] 深入研究后端架构（ReportAgent, LLMClient, TaskManager, 日志系统）
+- [x] 研究前端 ArticleGenerateView.vue 完整代码（mock 逻辑、UI 状态驱动）
+- [x] 制定 Phase 3.3 详细计划（ArticleAgent + API + 前端改造 + Docker）
+
+### 待执行
+- [ ] Phase 3.3: 对接真实 LLM API（用户确认后开始实现）
+
+## Session 10 — 2026-03-12
+
+### 完成
+- [x] 恢复 Phase 3.3 上下文并确认新任务为“真实 LLM API 对接”
+- [x] 复核后端可复用能力（LLMClient / TaskManager / ReportLogger 模式）
+- [x] 复核前端现有 mock 生成逻辑和提交链路
+- [x] 确定实现路径为新增独立 `article` 服务和 API
+
+### 进行中
+- [x] 后端实现 `ArticleAgent + /api/article/*`
+- [x] 前端将 ScienceArticle / ArticleGenerateView 接到真实 API
+
+### 完成
+- [x] 新建 `backend/app/services/article_agent.py`
+- [x] 新建 `backend/app/api/article.py`
+- [x] 注册 `article` blueprint 到 Flask app
+- [x] 新建 `frontend/src/api/article.js`
+- [x] `ScienceArticle.vue` 接入真实生成启动接口
+- [x] `ArticleGenerateView.vue` 接入真实日志轮询与聊天接口
+- [x] `python3 -m py_compile` 通过
+- [x] `npm run build` 通过
+
+### 待执行
+- [ ] 用户本地以真实 LLM 配置完成一次端到端生成验证
