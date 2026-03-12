@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div class="brand" @click="router.push('/')">医路达AI创作助手</div>
       </div>
       
       <div class="header-center">
@@ -312,7 +312,7 @@ onUnmounted(() => {
 
 <style scoped>
 .main-view {
-  height: 100vh;
+  height: calc(100vh - var(--site-header-offset));
   display: flex;
   flex-direction: column;
   background: #FFF;
@@ -444,4 +444,3 @@ onUnmounted(() => {
   border-right: 1px solid #EAEAEA;
 }
 </style>
-

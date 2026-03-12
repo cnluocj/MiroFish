@@ -1,12 +1,27 @@
 <template>
-  <router-view />
+  <SiteHeader />
+  <div class="app-shell">
+    <router-view />
+  </div>
 </template>
 
 <script setup>
-// 使用 Vue Router 来管理页面
+import SiteHeader from './components/SiteHeader.vue'
 </script>
 
 <style>
+:root {
+  --site-header-height-desktop: 70px;
+  --site-header-height-mobile: 50px;
+  --site-header-offset: var(--site-header-height-desktop);
+}
+
+@media (max-width: 992px) {
+  :root {
+    --site-header-offset: var(--site-header-height-mobile);
+  }
+}
+
 /* 全局样式重置 */
 * {
   margin: 0;
@@ -15,11 +30,21 @@
 }
 
 #app {
+  min-height: 100vh;
   font-family: 'JetBrains Mono', 'Space Grotesk', 'Noto Sans SC', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #000000;
   background-color: #ffffff;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding-top: var(--site-header-offset);
 }
 
 /* 滚动条样式 */

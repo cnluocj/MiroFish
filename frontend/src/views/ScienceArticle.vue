@@ -342,7 +342,7 @@ const handleSubmit = () => {
 }
 
 .page-container {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--site-header-offset));
   background: #fff;
   font-family: var(--font-sans);
   color: #000;
@@ -351,12 +351,13 @@ const handleSubmit = () => {
 /* 导航 */
 .navbar {
   height: 60px;
-  background: #000;
-  color: #fff;
+  background: #fff;
+  color: #111827;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 40px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .nav-brand {
@@ -370,11 +371,11 @@ const handleSubmit = () => {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  color: #6B7280;
+  transition: color 0.2s;
 }
 
-.nav-back:hover { opacity: 1; }
+.nav-back:hover { color: #111827; }
 
 /* 双栏布局 */
 .dashboard-section {
@@ -390,7 +391,7 @@ const handleSubmit = () => {
 .left-panel {
   flex: 0.8;
   position: sticky;
-  top: 80px;
+  top: calc(var(--site-header-offset) + 20px);
 }
 
 .panel-header {

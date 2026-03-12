@@ -53,3 +53,29 @@
 - [x] 4.3 ScienceArticle.vue — 科室选择后自动填充科普主题（12个科室映射）
 - [x] 4.4 ScienceArticle.vue — 双栏布局改造（左侧工作流6步骤 + 右侧表单）
 - [x] 构建验证通过
+
+## Session 7 — 2026-03-12
+
+### 完成
+- [x] 研究主站 yizhibang Header 组件 (Header.tsx + Header.module.css)
+- [x] 研究当前项目所有页面的 header 实现 (7个页面)
+- [x] 识别技术栈差异 (React CSS Modules → Vue Scoped CSS)
+- [x] 识别导航项和路由改造需求
+- [x] 制定 Phase 5 计划
+
+### 待执行
+- [ ] Phase 5: 集成主站 Header (用户确认后开始实现)
+
+## Session 8 — 2026-03-12
+
+### 完成
+- [x] 基于主站 Header 与当前 Vue 页面结构，确定 Phase 5 接入策略
+- [x] 确认全局接入点为 `frontend/src/App.vue`
+- [x] 确认受影响页面范围（Home / ScienceArticle / CaseReport / MainView / SimulationView / ReportView / ArticleGenerateView）
+- [x] 新建 `frontend/src/components/SiteHeader.vue`
+- [x] 更新 `frontend/src/App.vue` 全局挂载主站 Header
+- [x] 完成入口页与工作流页的顶部布局适配
+- [x] `npm run build` 构建通过
+
+### 待执行
+- [ ] 用户本地启动后进行人工视觉验收

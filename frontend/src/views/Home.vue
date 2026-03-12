@@ -1,10 +1,5 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
-    <nav class="navbar">
-      <div class="nav-brand">医路达AI创作助手</div>
-    </nav>
-
     <div class="main-content">
       <div class="page-header">
         <span class="orange-tag">选择创作类型</span>
@@ -80,34 +75,17 @@ const router = useRouter()
 }
 
 .home-container {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--site-header-offset));
   background: var(--white);
   font-family: var(--font-sans);
   color: var(--black);
-}
-
-/* 顶部导航 */
-.navbar {
-  height: 60px;
-  background: var(--black);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  padding: 0 40px;
-}
-
-.nav-brand {
-  font-family: var(--font-cn);
-  font-weight: 800;
-  letter-spacing: 1px;
-  font-size: 1.1rem;
 }
 
 /* 主内容区 */
 .main-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 80px 40px;
+  padding: 72px 40px 80px;
 }
 
 .page-header {

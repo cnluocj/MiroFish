@@ -558,7 +558,7 @@ onUnmounted(() => {
 
 /* === Layout === */
 .main-view {
-  height: 100vh;
+  height: calc(100vh - var(--site-header-offset));
   display: flex;
   flex-direction: column;
   background: #FFF;

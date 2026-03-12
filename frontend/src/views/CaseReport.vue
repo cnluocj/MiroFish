@@ -65,19 +65,20 @@ const router = useRouter()
 
 <style scoped>
 .page-container {
-  min-height: 100vh;
+  min-height: calc(100vh - var(--site-header-offset));
   background: #fff;
   font-family: 'Noto Sans SC', system-ui, sans-serif;
 }
 
 .navbar {
   height: 60px;
-  background: #000;
-  color: #fff;
+  background: #fff;
+  color: #111827;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 40px;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .nav-brand {
@@ -90,16 +91,16 @@ const router = useRouter()
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.85rem;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  color: #6B7280;
+  transition: color 0.2s;
 }
 
-.nav-back:hover { opacity: 1; }
+.nav-back:hover { color: #111827; }
 
 .content {
   max-width: 600px;
   margin: 0 auto;
-  padding: 80px 40px;
+  padding: 72px 40px 80px;
 }
 
 .status-row {
