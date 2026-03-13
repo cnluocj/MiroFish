@@ -8,9 +8,14 @@
     <div class="dashboard-section">
       <!-- 左栏：状态与工作流 -->
       <div class="left-panel">
-        <div class="panel-header">
+        <div class="panel-header" @click="handleStatusClick" style="cursor: default; user-select: none;">
           <span class="status-dot">■</span> 系统状态
         </div>
+        <ChangelogModal
+          :visible="showChangelog"
+          :content="changelogContent"
+          @close="showChangelog = false"
+        />
 
         <h2 class="section-title">准备就绪</h2>
         <p class="section-desc">
@@ -244,12 +249,28 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateArticle } from '../api/article'
 import { setArticleForm } from '../store/articleForm'
+import changelogContent from '../changelogs/science-article.md?raw'
+import ChangelogModal from '../components/ChangelogModal.vue'
 
 const router = useRouter()
 const fileInput = ref(null)
 const isDragOver = ref(false)
 const currentWorkflowStep = ref(0)
 const isSubmitting = ref(false)
+const showChangelog = ref(false)
+let clickCount = 0
+let clickTimer = null
+
+const handleStatusClick = () => {
+  clickCount++
+  clearTimeout(clickTimer)
+  if (clickCount >= 3) {
+    clickCount = 0
+    showChangelog.value = true
+  } else {
+    clickTimer = setTimeout(() => { clickCount = 0 }, 500)
+  }
+}
 
 const audiences = [
   { value: 'general', label: '普通大众' },
